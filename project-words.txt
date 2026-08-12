@@ -7,11 +7,13 @@ luma
 mux
 muxed
 muxes
+mvdan
 numpy
 remesh
 remeshing
 retexture
 retexturing
+shfmt
 tripo
 upscales
 veed
