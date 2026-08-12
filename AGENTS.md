@@ -10,9 +10,12 @@ Public Agent Skills for [Scenario](https://scenario.com): procedural knowledge t
 
 ```
 skills/<name>/SKILL.md   # name must equal the directory name
+tests/<name>/            # test suite for any script shipped with skill <name>
 ```
 
 Supporting files (heavy references, scripts) may sit next to a SKILL.md only when the content is too large to inline. Link supporting files directly from SKILL.md: agents resolve file references one level deep, so a reference chained through another supporting file may never be read.
+
+Every script shipped with a skill has a test suite in `tests/<name>/` at the repo root, never inside the skill directory: published skill directories carry only what an agent needs at runtime. Python scripts are tested with stdlib `unittest`; TypeScript scripts with vitest. See Validation and testing.
 
 ## Public content only
 
@@ -36,6 +39,7 @@ uvx --from "git+https://github.com/agentskills/agentskills.git#subdirectory=skil
 - `description`: third person, starts with "Use when", describes triggering conditions only (never a summary of the skill's workflow), under 500 characters, rich in keywords an agent would search for.
 - Body: 400-600 words (hard cap 900). Structure: Overview, Quick reference, one excellent worked example, Common mistakes.
 - Why the budget: agents load only `name` and `description` at startup; the body enters context only when the skill triggers, and then every word competes with the user's task. Spend words on facts an agent would otherwise guess wrong, not on prose.
+- Body over budget? Trim before you split. The body loads on every trigger; a supporting file loads only when the agent follows its link, so facts every run needs stay in the body, and a linked reference holds only content that is genuinely situational (deep reference tables, per-mode detail, scripts). Splitting to dodge the budget adds a hop to the same context cost: a reference the agent must always read is a longer body in disguise.
 - Ground every tool and parameter claim in the [tool reference](https://mcp.scenario.com/docs/tools). Never present a model ID as a constant: model availability differs per team, so teach discovery via `search`.
 - Cross-reference the `scenario` skill for connection setup instead of repeating it.
 - Style: no em dashes, ever (use a comma, a colon, parentheses, or two sentences). No marketing language. Agent-agnostic wording: do not assume a specific agent outside clearly labeled setup snippets.
@@ -57,6 +61,7 @@ One-time setup after cloning: `pnpm install`. It installs commitlint, cspell, an
 ## Validation and testing
 
 - `skills-ref validate` must pass for every skill before any commit (the pre-commit hook and CI both run it via `scripts/validate-skills.sh`).
+- Every script shipped with a skill has a test suite in `tests/<name>/`. Python scripts use stdlib `unittest` (files named `test_*.py`); TypeScript scripts use vitest (files named `*.test.ts`). `scripts/test-skill-scripts.sh` runs every suite and fails when a shipped script has no suite; CI runs it on every push and PR. It is not part of the pre-commit hook (suites may need system tools such as ffmpeg), so run it manually when touching a script. A `tests/<name>/requirements.txt` declares extra Python dependencies for CI.
 - Before merging a new or changed skill, run the application test below. Mechanical validation checks the format; the application test checks whether the skill actually teaches.
 
 ### Application test protocol
