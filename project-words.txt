@@ -2,6 +2,7 @@ captioner
 equirectangular
 ffprobe
 inpaint
+inpainting
 kling
 krea
 loras
@@ -12,6 +13,7 @@ muxed
 muxes
 mvdan
 numpy
+outpainting
 remesh
 remeshing
 retexture
