@@ -57,14 +57,15 @@ One-time setup after cloning: `pnpm install`. It installs commitlint, cspell, pr
 - Known bug: committing from a git worktree fails the pre-commit hook at `pnpm spec`. Git exports `GIT_DIR` to hooks, uv's git subprocesses inherit it, and spec validation resolves the agentskills repo to this repo's own HEAD, erroring with "has no subdirectory `skills-ref`" (the upstream repo is fine). Until `GIT_DIR`, `GIT_WORK_TREE`, and `GIT_INDEX_FILE` are unset at the top of `.husky/pre-commit`, run `pnpm validate` from the worktree in a shell without those variables, then commit with `--no-verify`.
 - Formatting is enforced by prettier with the config committed in `.prettierrc.json`, so the CLI and the VS Code extension agree. `pnpm format` rewrites the repo; `pnpm format:check` only verifies. Coverage is everything prettier can parse (markdown, JSON, YAML, JS/TS) plus shell scripts via `prettier-plugin-sh`, which formats with mvdan-sh, the engine behind shfmt. Generated files and the vendored dev skills are excluded in `.prettierignore`.
 - Spelling: add legitimate project terms to `project-words.txt`; never disable cspell inline.
-- PRs are squash-merged, so the PR title becomes the commit header on `main`. The `/squash-message` command drafts that message and `/pr-summary` refreshes the PR body (both in `.claude/commands/`).
-- The `skill-files-reviewer` agent (`.claude/agents/`) reviews supporting files added or changed next to a SKILL.md: justified, linked from SKILL.md, runnable, public content only, house style.
+- PRs are squash-merged, so the PR title becomes the commit header on `main`. The `/squash-message` command drafts that message and `/pr-summary` refreshes the PR body (both in `.claude/commands/`). `/skills:validate <name>` (`.claude/commands/skills/`) runs the application test for one skill and reports it to the PR; see Validation and testing.
+- The `skill-files-reviewer` agent (`.claude/agents/`) reviews supporting files added or changed next to a SKILL.md: justified, linked from SKILL.md, runnable, public content only, house style. The `skill-tester` agent in the same directory is the clean-room runner `/skills:validate` spawns when a separate process cannot reach the MCP server; it is not for ordinary work.
 
 ## Validation and testing
 
 - `skills-ref validate` must pass for every skill before any commit (the pre-commit hook and CI both run it via `pnpm spec`).
 - Every script shipped with a skill has a test suite in `tests/<name>/`. Python scripts use stdlib `unittest` (files named `test_*.py`); TypeScript scripts use vitest (files named `*.test.ts`). `pnpm test` runs every suite and fails when a shipped script has no suite; CI runs it on every push and PR. It is not part of the pre-commit hook (suites may need system tools such as ffmpeg), so run it manually when touching a script. A `tests/<name>/requirements.txt` declares extra Python dependencies for CI.
 - Before merging a new or changed skill, run the application test below. Mechanical validation checks the format; the application test checks whether the skill actually teaches.
+- `/skills:validate <name>` (`.claude/commands/skills/`) drives that test: it writes a use case for the skill, installs the working-tree copy into a clean-room agent that has no repository context, runs it end to end against the real MCP server in a team and project you choose, grades the transcript, and posts the report to the PR for the current branch (or asks what to do with it when there is none). `--plan-only` runs the zero-cost planning variant below instead of live generation.
 
 ### Application test protocol
 
@@ -73,8 +74,8 @@ One-time setup after cloning: `pnpm install`. It installs commitlint, cspell, pr
 3. Pick a task that forces the skill's non-obvious facts (upload flow, job-wait re-calls, dry runs, launch semantics), not one answerable with generic MCP intuition.
 4. Grade the plan against the [tool reference](https://mcp.scenario.com/docs/tools), fetched fresh rather than recalled:
    - Every tool and parameter named in the plan exists. One invented name is a fail.
-   - Correct flow: discovery, `model_schema_get`, `model_run`, `jobs_wait` (re-called with `pending_job_ids`, never `job_get` polling), then `asset_display` / `asset_download`.
-   - Model ids come from a `search` step, never asserted as constants.
+   - Correct flow: the loop the skill under test teaches. For a generation task: discovery, `model_schema_get`, `model_run`, then `jobs_wait` re-called with `pending_job_ids` for any job still running (fast models return complete inline; `job_get` polling is never correct), then `asset_display` / `asset_download`.
+   - Model ids come from a `search` or `recommend` step, never asserted as constants.
    - The task's trap steps are handled the way the skill teaches.
    - Anything asserted that appears in neither the SKILL.md nor the tool reference counts as a guess, even when it happens to be right.
 5. A failure is a defect in the skill text: fix the missing or ambiguous sentence, then re-run with a new fresh agent (a failed agent is contaminated by its own mistake).
