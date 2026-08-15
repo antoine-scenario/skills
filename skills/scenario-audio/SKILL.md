@@ -1,6 +1,6 @@
 ---
 name: scenario-audio
-description: Use when generating or handling audio on Scenario via MCP. Triggers include music tracks, background scores, soundtracks, game sound effects, SFX, foley, ambience, looping audio, voiceover, narration, speech, TTS, text-to-speech, voice cloning, re-voicing a recording, scoring or adding sound to a video, transcription, or requests to create, wait on, play, or download audio files (MP3, WAV) with Scenario tools.
+description: Use when generating or handling audio on Scenario via MCP. Triggers include music tracks, full-length songs with vocals written from lyrics, background scores, soundtracks, game sound effects, SFX, foley, ambience, looping audio, voiceover, narration, speech, TTS, text-to-speech, voice cloning, re-voicing a recording, scoring or adding sound to a video, transcription, or requests to create, wait on, play, or download audio files (MP3, WAV) with Scenario tools.
 license: MIT
 ---
 
@@ -25,7 +25,7 @@ Find existing audio assets with `search` target="assets", filters={kind: "audio"
 
 ## What the audio surface covers
 
-- Music: text-to-music models produce instrumental tracks or full songs; several accept lyrics with section tags and duration controls.
+- Music: text-to-music models produce short beds or full-length songs with vocals; the song lane has its own contract, below.
 - Sound effects: text-to-SFX models generate short clips from a description; some support seamless looping.
 - Voice and speech: text-to-speech models with preset voices, multilingual output, and emotion or pacing controls; some clone a voice from a short reference clip; speech-to-speech re-voices an existing recording.
 - Video to audio: models that score a silent video or add synchronized sound effects, taking a video asset as input.
@@ -43,8 +43,19 @@ Find existing audio assets with `search` target="assets", filters={kind: "audio"
 Prompting tips:
 
 - SFX: name the source, material, action, and acoustic space, and say what to exclude ("no music", "no reverb"). One event per clip; generate variations as separate runs.
-- Music: give genre, mood, tempo, and instrumentation, and say instrumental or vocal. Lyrics-capable models expect structured sections; check the schema.
+- Music: give genre, mood, tempo, and instrumentation. Short beds usually take a single prompt, with duration or looping in the schema; songs with vocals are their own lane, below.
 - Speech: keep the text field to the words to speak. Voice choice, language, emotion, and pacing live in separate schema fields or inline tags depending on the model; check the schema instead of packing direction into the text.
+
+## Songs with vocals
+
+A full-length song is not a longer music bed, and song schemas vary more than the rest of the audio lane, so `model_schema_get` decides everything here. Current families shape the request three ways: a style prompt plus a separate lyric sheet, a single prose prompt carrying style and structure together, or an ordered section array with per-section lyrics, styles, and durations.
+
+- **Words never go in a style field.** On split-field models the style field carries genre, mood, tempo in BPM, key, vocal style, and instrumentation; the lyric field carries the words, shaped by section tags such as `[Verse]` and `[Chorus]`.
+- **Instrumental is a flag where the schema has one.** Asking for "no vocals" in the style text does not reliably suppress them; when no flag exists, the schema's text fields are the only lever.
+- **Auto-lyrics is also a flag** on the family that has one: with the lyric field empty, it writes lyrics from the style brief. Empty lyrics with no flag is not the same request.
+- **Text fields are length-capped**, with caps that differ per model and field, and going over is a 400 rather than a truncation.
+
+Where the schema exposes a duration field (flagged `cost_impact`), it caps both length and price; where none exists, the lyric sheet or prompt sets both. Either way, price the song with `dry_run: true` before committing, and launch with `wait=false`.
 
 ## Common mistakes
 
@@ -55,3 +66,5 @@ Prompting tips:
 - Passing `format` to `asset_download` for audio: it converts image formats only, so omit it.
 - Putting voice direction inside TTS text ("say this angrily"): direction can end up spoken. Use the schema's emotion or voice fields.
 - Sending image parameters (width, height) to audio models: their schemas do not accept them.
+- Pasting lyrics into the style field: the model then describes a song instead of singing one.
+- Running a full-length song without `dry_run`: when the schema has no duration field, the lyric sheet sets both the length and the bill.
