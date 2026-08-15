@@ -14,11 +14,11 @@ The side effect of reference mode is that independently generated shots each res
 
 Order matters less than presence. Every shot that worked had all five:
 
-1. What each reference is for, by tag: `@image1 defines the world and the slab. @audio1 is timing only.`
+1. What each reference is for, by tag: `@image1 defines the world and the slab. @audio1 is timing only.` The tags address the reference arrays only. A first-frame `image` has nothing to tag, so name what the opening frame already shows and prompt the motion away from it.
 2. The section's function and visual goal in one line: `the pulse enters. Visual goal: arrival.`
 3. One dominant camera move and one dominant action. Two of either produces a mess.
 4. The closing state, explicitly.
-5. An exclusion list: `No people, no text, no captions, no logos, no watermarks. Silent footage.`
+5. An exclusion list, audio included: `No people, no text, no captions, no logos, no watermarks. Diegetic sound only, no music, no score.` (`Silent footage.` instead when the shots run with `generateAudio: false`.)
 
 Keep one shot to one idea. A prompt describing a sequence makes the model cut inside the clip.
 
