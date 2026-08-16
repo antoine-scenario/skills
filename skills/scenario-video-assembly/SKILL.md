@@ -8,7 +8,7 @@ license: MIT
 
 ## Overview
 
-Scenario has no editing tools on the MCP surface. Every compositor, concatenator, trimmer and captioner is a deterministic model run through `model_run`. Find them with `search`, `target="models"`, `public=true`, `filters={"tags": ["tool"]}` (84 hits at authoring time), one capability per query. Connection and the core loop: see the `scenario` skill; the clips themselves: see `scenario-video`.
+Scenario has no editing tools on the MCP surface. Every compositor, concatenator, trimmer and captioner is a deterministic model run through `model_run`. Find them with `search`, `target="models"`, `public=true`, `filters={"tags": ["tool"]}` (84 hits at authoring time), one capability per query. Connection and the core loop: see the `scenario` skill; the clips themselves: see `scenario-video`. If a sibling skill named here is missing from your available skills, ask the user to install it (`npx skills add scenario-labs/skills --skill <name>`); unattended, proceed from tool schemas and flag the gap.
 
 ## Quick reference: pick the backend first
 
@@ -36,7 +36,7 @@ Everything is in seconds at `step: 0.1`, so do not promise frame-accurate cuts. 
 
 `canvasMode` and `durationMode` both default to `"auto"`, computed from the layers: a custom frame is `canvasMode: "custom"` plus numeric `canvasWidth` and `canvasHeight` (there are no top-level `width`/`height`, and unlike the layers' string `width`/`height` these are numbers), and a custom length is `durationMode: "custom"` plus the top-level `duration`. `fit` only acts on a layer that also sets the layer's own `width` and `height`, strings like `x` and `y`: to reframe a clip, set both to the canvas size and pass `"cover"` (crops) or `"contain"` (letterboxes), since the default `"fill"` stretches. The output field is `videoOutputFormat` here, `imageOutputFormat` in Image Studio, and `outputFormat` in concat and the trim utilities.
 
-A layer has no `type` field: its kind is inferred from `source`, which accepts only image, video and audio. There is no text layer, so titles, lower thirds and end cards arrive as rendered PNGs composited as image layers.
+A layer has no `type` field: its kind is inferred from `source`, which accepts only image, video and audio. There is no text layer, so titles, lower thirds and end cards arrive as rendered PNGs composited as image layers; `scenario-text-overlay` renders them letter-perfect.
 
 ## Worked example: three clips, a music bed, and captions
 
