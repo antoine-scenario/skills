@@ -1,0 +1,73 @@
+---
+name: scenario-video-editing
+description: "Use when editing footage that already exists on Scenario through MCP with a tool model instead of a new generation: 3D LUT grading, color correction, film grain, vignette, blur, sharpen, glow, tint, desaturate, posterize, solarize, cubism, crystallize, oilify, chromatic aberration or dodge and burn on a clip; trimming to a time range, splitting at cut points, reversing, resizing, re-encoding, frame extraction, image sequences, background removal, segmentation masks, subjects as layers."
+license: MIT
+---
+
+# Scenario Video Editing
+
+## Overview
+
+Every image post-processing effect has a video twin, and each is a `model_run` on a tool model: one clip in, a few numbers, one clip out. Generating or restyling footage, lipsync, dubbing and upscaling are `scenario-video`; concatenating, compositing and captioning a cut are `scenario-video-assembly`; the still-image side is `scenario-image-editing`. Connection and the core loop: `scenario`. If a sibling skill named here is missing from your available skills, ask the user to install it (`npx skills add scenario-labs/skills --skill <name>`); unattended, proceed from tool schemas and flag the gap.
+
+## The twin rule
+
+A video effect's id is the image id with `-video` appended, its file field is `video` rather than `image`, and the knobs are identical: `model_scenario-postprocessing-lut-video` takes the same `lutStyle` enum and `lutIntensity` as `model_scenario-postprocessing-lut`. All eighteen have twins, from blur and color correction through oilify, posterize and vignette.
+
+One twin differs: Dissolve (Video) blends the clip with a still `dissolveImage`, not a second clip; crossfading two clips is a concat transition.
+
+## Quick reference
+
+| Need                  | Model or query                                                           |
+| --------------------- | ------------------------------------------------------------------------ |
+| Grade or stylize      | `filters={"tags": ["Post Processing"]}`, plus the effect name as `query` |
+| Trim to a range       | `model_scenario-video-cut` (`startTime`, `endTime`)                      |
+| Cut into segments     | `model_scenario-video-split` (`cutPoints`; N points give N+1 clips)      |
+| Rescale or re-encode  | `model_scenario-resize-video`                                            |
+| Play a clip backwards | `model_reverse-video`                                                    |
+| Frames out, frames in | `model_scenario-video-to-image-seq`, `model_scenario-image-seq-to-video` |
+| Subjects as layers    | `model_scenario-video-layers-extractor`                                  |
+| Masks, cutouts, audio | query `"segmentation"`, `"video background removal"`, `"audio extract"`  |
+
+All via `search`, `target="models"`, `public=true`; re-discover rather than hardcoding, availability differs per team.
+
+## Cost follows the clip, so trim first
+
+On the video twins the `video` input carries `cost_impact: true`, which the image versions do not: price tracks the footage rather than the settings. Trim to the frames that ship, then grade; `dry_run=true` prices a payload before it runs. Video tools also outlast `model_run`'s wait window, so launch with `wait=false` and follow with `jobs_wait`, re-calling it with the returned `pending_job_ids`. A client-side timeout on `jobs_wait` is as harmless as the server's own: re-call it with the same ids rather than treating the job as lost.
+
+Checking costs nothing: `asset_get` returns `firstFrame` and `lastFrame` as their own asset ids, so `asset_display` one to confirm a grade before chaining another billable run onto it.
+
+## Field names drift between neighbors
+
+- Video Cut takes a scalar `video`. Resize Video takes `video` as an `array: true` field capped at one item, where a bare id is dropped silently.
+- The output format field is `outputFormat` on cut and split, `videoOutputFormat` on resize.
+- `preserveAudio` defaults to true on cut, split and resize; the effects expose no audio field and pass the track through.
+- Enum values are copied, not retyped: one `lutStyle` string contains a space.
+- `asset_download` takes no `format` for a video: it converts image formats only.
+
+## Resizing is not reframing
+
+No tool model repaints a video's canvas: Resize Video fits the clip inside the target, or stretches it when `preserveAspectRatio` is false. Neither gives a 16:9 clip a vertical frame, so that brief needs a decision before any spend, between two routes an order of magnitude apart in price.
+
+- **Generative reframe** (`query="reframe"`, Luma Ray 3.2 Reframe and Wan 2.2 Reframe, `scenario-video` territory) outpaints past the frame and keeps the whole picture, at by far the highest price in such a job. Resolution ceilings bite: a schema can allow a vertical ratio and its top resolution tier separately yet reject the pair at run time.
+- **Compositor** (Video Studio, cropping or pillarboxing onto a vertical canvas) is cheap but throws away width or adds bars, and its layer geometry is `scenario-video-assembly`'s contract rather than a one-line setting.
+
+`dry_run` prices a payload without validating it, so either route can bill for a run that fails outright or returns a mis-composed frame at exactly the right dimensions.
+
+## Worked example: a graded cutdown
+
+Launch every `model_run` below with `wait=false` and retire it with `jobs_wait` before the next step reads its asset.
+
+1. `asset_get` the master and read `properties.duration` before choosing times.
+2. Trim: `model_scenario-video-cut` with `startTime` and `endTime` in seconds. Going first is what makes every later step cheaper.
+3. Reshape: `model_scenario-resize-video`, `video` as a one-item array, `videoOutputFormat: "mp4"`. It rescales within the clip's own aspect ratio, so a different shape is the reframe decision above, taken here rather than bolted on later.
+4. Grade: `model_schema_get`, then the LUT twin with `lutIntensity` near 0.6.
+5. Texture: the Grain twin on that output, last, so its grain is sized for the delivered frame rather than resampled by a later resize.
+6. `asset_display` the result's `firstFrame` to confirm the look, then `asset_download` with no `format`.
+
+## Common mistakes
+
+- Grading each source clip and then concatenating: grade the finished master once, or the shots drift apart.
+- Reaching for local ffmpeg, or for an MCP tool named `video_edit`: the surface is `model_run` on tool models.
+- Polling `job_get` in a loop instead of `jobs_wait`, whose timeout is not an error.
+- Trusting a Grain profile to add grain: the 22 profiles are looks, not intensities, and some soften the picture instead. Compare a frame against the input.
