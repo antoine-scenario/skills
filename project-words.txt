@@ -1,4 +1,9 @@
 Cinzel
+KAEL
+Kontext
+MYBRAND
+MYSTYLE
+Qwen
 RRGGBB
 binet
 captioner
