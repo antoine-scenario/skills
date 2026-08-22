@@ -18,34 +18,35 @@ Connection and the core generation loop: see the `scenario` skill in this repo. 
 | ------------------- | --------------------------------------------------------------------------- | ------------------------------------- |
 | Find texture models | `search` with `target="models"`, `query="seamless tileable"`, `public=true` | Also try `query="texture"` or `"PBR"` |
 | Inspect inputs      | `model_schema_get`                                                          | Always call before `model_run`        |
-| Generate            | `model_run`                                                                 | Schema-conformant parameters          |
-| Wait                | `jobs_wait`                                                                 | Never poll `job_get` in a loop        |
+| Generate            | `model_run`                                                                 | `dry_run=true` prices a batch first   |
+| Wait                | `jobs_wait`                                                                 | Re-call with `pending_job_ids`        |
 | View and save       | `asset_display`, then `asset_download`                                      | Download for engine import            |
 | Upscale             | `model_run` on a texture upscaler                                           | 2x to 8x, tiling preserved            |
 
-## What live search confirms (examples to re-discover, not constants)
+## What live search confirmed at authoring time (examples to re-discover, not constants)
 
-- Seamless generation: `model_scenario-texture` (Scenario Texture) takes a prompt (a tileable hint is appended automatically), `width`/`height` from 16 to 3840 in multiples of 16, `quality`, `seed`, up to 10 `referenceImages` for style, and `eraseSeam` with `overlap`/`featherRadius` to inpaint away both seam axes.
+- Seamless generation: `model_scenario-texture` (Scenario Texture) takes a prompt (a tileable hint is appended automatically), `width`/`height` from 16 to 3840 in multiples of 16, `quality`, `seed`, up to 10 `referenceImages` for style, and `eraseSeam` (off by default) with `overlap`/`featherRadius` to inpaint away both seam axes.
 - Themed texture LoRAs (Flux.1 LoRA, tag `sc:texture`): floors, marble, concrete, stone walls, wood boards, brick, terracotta, hand-painted, cybernetic, realistic textures. They expose dedicated texture capabilities (`txt2img_texture`, `img2img_texture`, `controlnet_texture`).
-- Tiling-safe upscaling: `model_sc-upscale-flux-texture` (Scenario Texture Upscale), `upscaleFactor` 2 to 8, presets `precise`/`balanced`/`creative`, optional prompt and style images.
+- Tiling-safe upscaling: `model_sc-upscale-flux-texture` (Scenario Texture Upscale), `upscaleFactor` 2 (the minimum) to 8, presets `precise`/`balanced`/`creative` riding the same `strength` and controlnet sliders the schema exposes. It re-renders, so expect small tonal drift: `precise` with low strength minimizes it, and the result is compared against the source before shipping.
 - Material-look conversion: `model_sc-texture-converter` (Texture Converter) turns a flat image into a surface material using `raised`, `shiny`, `polished`, `angular` sliders and an `invert` relief toggle.
-- PBR maps ship with 3D texturing and image-to-3D models, not as standalone 2D map decomposition. Examples seen live: Tripo 3.0 Texturing (PBR mode outputs albedo, metallic, roughness, normal), Tencent Texture Edit (prompt mode outputs full PBR maps for FBX models), Meshy 7 Retexture (optional PBR maps). Enable the model's PBR toggle found via `model_schema_get`.
+- PBR maps come from two different routes. For a flat texture, 2D map extractors (tag `sc:texture`, `search` `query="PBR"`) return a full set in one img2img call: `model_patina` (PATINA Image to Maps) outputs base color, normal, roughness, metalness, and height, and `model_patina-material` tiles a PBR material straight from a prompt. For a mesh, 3D texturing and image-to-3D models emit the maps instead (Tripo 3.0 Texturing, Tencent Texture Edit, Meshy 7 Retexture); enable the PBR toggle found via `model_schema_get`. Retexturing a full mesh is a 3D-to-3D pipeline: see `scenario-3d`, and `scenario-meshy` for the Meshy retexture contract.
 
 ## Worked example: seamless brick, iterated then upscaled
 
 1. `search` `target="models"`, `query="seamless tileable"`, `public=true`, pick the seamless generator (e.g. `model_scenario-texture`).
 2. `model_schema_get` `model_id="model_scenario-texture"`.
-3. `model_run` with `parameters={"prompt": "weathered red brick wall, moss in the mortar joints", "width": 1024, "height": 1024, "eraseSeam": true, "seed": 42}`.
-4. `jobs_wait` with `job_ids=["job_..."]` (the id returned by `model_run`), then `asset_display` the output asset.
+3. `model_run` with `parameters={"prompt": "weathered red brick wall, moss in the mortar joints", "width": 1024, "height": 1024, "eraseSeam": true, "seed": 42}`. For a themed pack, price the batch with `dry_run=true` first, then launch the runs with `wait=false`.
+4. `jobs_wait` with `job_ids=["job_..."]` (the ids returned by `model_run`). A ~180s timeout is not an error: re-call with the returned `pending_job_ids` as `job_ids`, never a second `model_run`. Then `asset_display` the output asset.
 5. Iterate: rerun with the same `seed` and an edited prompt, or add `referenceImages=["asset_..."]` to lock a style.
-6. Upscale: `model_schema_get` then `model_run` `model_id="model_sc-upscale-flux-texture"` with `parameters={"image": "asset_...", "upscaleFactor": 4, "preset": "precise"}`.
-7. `asset_download` the final asset for engine import.
+6. Upscale: `model_schema_get` then `model_run` `model_id="model_sc-upscale-flux-texture"` with `parameters={"image": "asset_...", "upscaleFactor": 2, "preset": "precise"}`, raising the factor only deliberately: cost follows output pixels, and this leg can only be `dry_run`-priced once its input asset exists, so a two-step chain is never priced up front.
+7. Verify tiling at no cost: the saved PNG's left column against its right and top row against bottom should differ no more than neighboring interior columns do, and a 2x2 self-tile proof sheet shows any seam instantly.
+8. `asset_download` the final asset for engine import.
 
 ## Common mistakes
 
 - Skipping `model_schema_get`: parameter names differ per model and most models reject an empty payload.
 - Using a generic upscaler on a tileable texture: it breaks the repeat at the seams. Use the texture-specific upscaler, which preserves tiling.
 - Generating huge sizes directly: generate near 1024, then upscale 2x to 8x. Generation dimensions cap at 3840.
-- Expecting a texture-to-PBR splitter: no live model decomposes a flat texture into separate map files. PBR maps come from 3D texturing models with PBR enabled.
+- Routing a flat texture through a 3D texturing model just to get PBR maps: the 2D map extractors do that in one img2img call, and the 3D models are for meshes.
 - Ignoring engine sizing: engines expect square power-of-two textures (the seamless generator defaults to 1024x1024, 1:1). The generator accepts any multiple of 16, so choose 1024 or 2048 deliberately.
 - Hardcoding model IDs: availability differs per team. Re-discover with `search` each session.
