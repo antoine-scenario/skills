@@ -1,6 +1,6 @@
 ---
 name: scenario-workflows
-description: "Use when a task involves running a Scenario workflow through MCP, including anything the user calls a Scenario app, a saved pipeline, or a multi-step generation graph. Triggers include listing workflows, building the inputs object for workflow_run, pricing a run with a dry run, approving or rejecting the approval node a run is stuck on, or a workflows_list reply that flooded the context. Creating or editing graphs is scenario-workflow-authoring. Keywords: workflow, app, pipeline, approval gate."
+description: "Use when a task involves running a Scenario workflow through MCP, including anything the user calls a Scenario app, a saved pipeline, or a multi-step generation graph. Triggers include listing workflows, building workflow_run's inputs object, pricing a run with a dry run, approving or rejecting a stuck approval node, a run rejected for input length, or a workflows_list reply flooding the context. Creating or editing graphs is scenario-workflow-authoring. Keywords: workflow, app, approval gate."
 license: MIT
 ---
 
@@ -38,6 +38,7 @@ Only `draft` and `ready` filter server-side; other statuses filter each page cli
 - Never harvest keys from `editorInfo.nodes[].data.name`; node names go stale.
 - `required` is an object: test `required.always === true`, a truthiness check reads `{"always": false}` as required too.
 - Inputs are typed: `string`, `file`, `file_array`, `string_array`, more. `file` takes an asset id (upload first). Match the type: the API drops scalar-for-array mismatches silently and still charges; `workflow_run` wraps simple scalars into arrays, but only simple ones.
+- `inputs[]` is not the whole contract: a string input inherits the length ceiling of the node behind it (a model's own prompt cap, observed as low as 4000 characters), which the record never lists and which surfaces only at run time as a 400 quoting the cap but not the input key. The dry run enforces the same validator at zero cost: route long texts through `dry_run=true` and shorten to fit rather than retrying verbatim, and with several string inputs bisect with dry runs to find the offender.
 - `workflow_get` wraps `inputs_definition`/`editor_info` in `workflow`; `workflows_list` wraps `inputs`/`editorInfo` in `workflows`.
 
 ## Worked example: run a saved app
@@ -52,5 +53,6 @@ Only `draft` and `ready` filter server-side; other statuses filter each page cli
 
 - Guessing input keys from labels or the node graph instead of reading `inputs[]`.
 - Skipping the dry run: two of three ready workflows failed its validation with correctly named inputs; report that error, not the payload.
+- Reading cost or attribution off the parent job: a finished workflow job bills `cuCost: 0` and lists `assetIds` with no per-model attribution. Every node ran as its own child job carrying the real `cuCost` (together they equal the dry-run quote), and `job_get` `verbose=true` on the workflow job returns `metadata.flow` mapping each node to its child `jobId`, `modelId` and output asset ids.
 - Running a draft: `flow: []` and `hasFlow: false` while `inputs` looks complete. Publishing: see `scenario-workflow-authoring`.
 - Calling `workflow_approve` or `workflow_reject` without all three of `workflow_id`, `workflow_job_id` and `node_id`: the gate is per node; a parked run never finishes on its own. Find the run with `jobs_list`, read it with `job_get` `verbose=true` (compact replies omit `metadata`): `metadata.flow` lists per-node statuses, the pending approval node's id is `node_id`, the job's id is `workflow_job_id`, its `workflowId` the `workflow_id`. Reject cancels the run.
