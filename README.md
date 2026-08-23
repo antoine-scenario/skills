@@ -160,6 +160,14 @@ Read finished assets back: caption them, extract a style or a control map, check
 | [scenario-asset-analysis](skills/scenario-asset-analysis/SKILL.md) | Reading assets back: captions, style descriptions, batch review against a brief, control maps, collections, tags                    |
 | [scenario-quality-gate](skills/scenario-quality-gate/SKILL.md)     | Pass/warn/fail image verdicts from the Quality Gate: free stored reads, dry-run pricing, feeding suggestions back into the next run |
 
+### Formats and placements
+
+Ship one approved master, image or video, to every placement: ratios, safe zones, and platform specs from social feeds to shops, storefronts, and print.
+
+| Skill                                                | Use it for                                                                                                                   |
+| ---------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| [scenario-formats](skills/scenario-formats/SKILL.md) | Deriving every placement from one master, image or video: crop vs resize vs expand vs reframe, platform specs and safe areas |
+
 ### Workflows and apps
 
 Discover, run, build, and publish Scenario workflows, the multi-step pipelines users call apps.

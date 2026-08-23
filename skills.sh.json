@@ -109,6 +109,11 @@
       "skills": ["scenario-asset-analysis", "scenario-quality-gate"]
     },
     {
+      "title": "Formats and placements",
+      "description": "Ship one approved master, image or video, to every placement: ratios, safe zones, and platform specs from social feeds to shops, storefronts, and print.",
+      "skills": ["scenario-formats"]
+    },
+    {
       "title": "Workflows and apps",
       "description": "Discover, run, build, and publish Scenario workflows, the multi-step pipelines users call apps.",
       "skills": ["scenario-workflows", "scenario-workflow-authoring"]
