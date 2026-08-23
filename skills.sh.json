@@ -97,7 +97,11 @@
     {
       "title": "Consistency and custom models",
       "description": "Hold one character, product, or style across a whole set, and train custom models on your own art.",
-      "skills": ["scenario-consistency", "scenario-model-training"]
+      "skills": [
+        "scenario-consistency",
+        "scenario-identity-library",
+        "scenario-model-training"
+      ]
     },
     {
       "title": "Reviewing and organizing output",
@@ -107,6 +111,11 @@
         "scenario-quality-gate",
         "scenario-refine-loop"
       ]
+    },
+    {
+      "title": "Formats and placements",
+      "description": "Ship one approved master, image or video, to every placement: ratios, safe zones, and platform specs from social feeds to shops, storefronts, and print.",
+      "skills": ["scenario-formats"]
     },
     {
       "title": "Workflows and apps",

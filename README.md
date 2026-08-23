@@ -145,10 +145,11 @@ The top audio families in depth: music, covers and stems, sound effects, speech,
 
 Hold one character, product, or style across a whole set, and train custom models on your own art.
 
-| Skill                                                              | Use it for                                                                                                         |
-| ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------ |
-| [scenario-consistency](skills/scenario-consistency/SKILL.md)       | Holding one character, product, or style across a set: baseline-plus-delta prompts, reference images, control maps |
-| [scenario-model-training](skills/scenario-model-training/SKILL.md) | Training custom models for style, character, or product consistency, and generating with them                      |
+| Skill                                                                  | Use it for                                                                                                                  |
+| ---------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| [scenario-consistency](skills/scenario-consistency/SKILL.md)           | Holding one character, product, or style across a set: baseline-plus-delta prompts, reference images, control maps          |
+| [scenario-identity-library](skills/scenario-identity-library/SKILL.md) | Creating named characters and props as reusable identities: interview to brief, gated collections, Grid Maker sheets, reuse |
+| [scenario-model-training](skills/scenario-model-training/SKILL.md)     | Training custom models for style, character, or product consistency, and generating with them                               |
 
 ### Reviewing and organizing output
 
@@ -159,6 +160,14 @@ Read finished assets back: caption them, extract a style or a control map, check
 | [scenario-asset-analysis](skills/scenario-asset-analysis/SKILL.md) | Reading assets back: captions, style descriptions, batch review against a brief, control maps, collections, tags                    |
 | [scenario-quality-gate](skills/scenario-quality-gate/SKILL.md)     | Pass/warn/fail image verdicts from the Quality Gate: free stored reads, dry-run pricing, feeding suggestions back into the next run |
 | [scenario-refine-loop](skills/scenario-refine-loop/SKILL.md)       | Iterating until output matches the brief: rubric first, batched critique verdicts, cheapest targeted fix, round caps                |
+
+### Formats and placements
+
+Ship one approved master, image or video, to every placement: ratios, safe zones, and platform specs from social feeds to shops, storefronts, and print.
+
+| Skill                                                | Use it for                                                                                                                   |
+| ---------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| [scenario-formats](skills/scenario-formats/SKILL.md) | Deriving every placement from one master, image or video: crop vs resize vs expand vs reframe, platform specs and safe areas |
 
 ### Workflows and apps
 
