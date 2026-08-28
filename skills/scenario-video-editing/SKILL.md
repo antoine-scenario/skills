@@ -47,7 +47,7 @@ Checking costs nothing: `asset_get` returns `firstFrame` and `lastFrame` as thei
 
 ## Resizing is not reframing
 
-No tool model repaints a video's canvas. Resize Video takes `fit`: `contain` (default) fits the clip inside the target, `stretch` forces the size and distorts, `cover` fills the target and center-crops the rest; the older `preserveAspectRatio` boolean maps to the first two. `cover` is the cheap way to an exact ratio when losing the edges is acceptable, but none of them gives a 16:9 clip a vertical frame with the whole picture kept, so that brief needs a decision before any spend, between two routes an order of magnitude apart in price.
+No tool model repaints a video's canvas. Resize Video takes `fit`: `contain` (default) fits the clip inside the target, `stretch` forces the size and distorts, `cover` fills the target and center-crops the rest. `cover` is the cheap way to an exact ratio when losing the edges is acceptable, but none of them gives a 16:9 clip a vertical frame with the whole picture kept, so that brief needs a decision before any spend, between two routes an order of magnitude apart in price.
 
 - **Generative reframe** (`query="reframe"`, Luma Ray 3.2 Reframe and Wan 2.2 Reframe, `scenario-video` territory) outpaints past the frame and keeps the whole picture, at by far the highest price in such a job. Resolution ceilings bite: a schema can allow a vertical ratio and its top resolution tier separately yet reject the pair at run time.
 - **Compositor** (Video Studio, cropping or pillarboxing onto a vertical canvas) is cheap but throws away width or adds bars, and its layer geometry is `scenario-video-assembly`'s contract rather than a one-line setting.
