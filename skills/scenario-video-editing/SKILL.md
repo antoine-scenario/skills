@@ -60,7 +60,7 @@ Launch every `model_run` below with `wait=false` and retire it with `jobs_wait` 
 
 1. `asset_get` the master and read `properties.duration` before choosing times.
 2. Trim: `model_scenario-video-cut` with `startTime` and `endTime` in seconds. Going first is what makes every later step cheaper.
-3. Reshape: `model_scenario-resize-video`, `video` as a one-item array, `videoOutputFormat: "mp4"`. It rescales within the clip's own aspect ratio, so a different shape is the reframe decision above, taken here rather than bolted on later.
+3. Reshape: `model_scenario-resize-video`, `video` as a one-item array, `videoOutputFormat: "mp4"`. `fit` settles the shape at this step rather than later: `cover` lands an exact ratio once the edges are spendable, and a shape that has to keep the whole picture is the reframe decision above.
 4. Grade: `model_schema_get`, then the LUT twin with `lutIntensity` near 0.6.
 5. Texture: the Grain twin on that output, last, so its grain is sized for the delivered frame rather than resampled by a later resize.
 6. `asset_display` the result's `firstFrame` to confirm the look, then `asset_download` with no `format`.
